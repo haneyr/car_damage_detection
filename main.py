@@ -30,7 +30,7 @@ with open(cfg_save_path, "rb") as f:
     cfg = pickle.load(f)
 
 cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
-cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
+cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.8
 cfg.MODEL.DEVICE = "cpu"
 
 project_id = os.environ.get("PROJECT_ID")
