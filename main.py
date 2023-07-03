@@ -4,18 +4,12 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from werkzeug.utils import secure_filename
 import torch, torchvision
-print(torch.cuda.is_available())
 import os, pickle ,random
 import cv2 as cv
 import matplotlib.pyplot as plt
 from detectron2.utils.logger import setup_logger
-setup_logger()
-from detectron2.data.datasets import register_coco_instances
-from detectron2.engine import DefaultTrainer
-from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.utils.visualizer import Visualizer
 from detectron2.config import get_cfg
-from detectron2 import model_zoo
 from detectron2.utils.visualizer import ColorMode
 from detectron2.engine import DefaultPredictor
 from io import BytesIO
@@ -47,16 +41,19 @@ def on_image(filepath, predictor, inputName):
     image = np.asarray(bytearray(filename), dtype="uint8")
     image = cv.imdecode(image, cv.IMREAD_COLOR)
     outputs = predictor(image)
-    v = Visualizer(image[:,:,::-1], metadata = {}, scale = 0.5, instance_mode = ColorMode.SEGMENTATION)
+    b = (outputs["instances"].to("cpu"))
+    if(len(b.scores.tolist()) > 0):
+        confidence = b.scores.tolist()[0]
+    else:
+        confidence = 0
+    v = Visualizer(image[:,:,::-1], metadata = {}, scale = 1, instance_mode = ColorMode.SEGMENTATION)
     v = v.draw_instance_predictions(outputs["instances"].to("cpu"))
     data = v.get_image()
     img = Image.fromarray(data, 'RGB')
     with BytesIO() as output:
         img.save(output, format="JPEG")
         contents = output.getvalue()
-    with fs.open(f"{bucket_name}/processed/masked_{inputName}", 'wb') as f:
-        f.write(contents)
-        f.close()
+    return confidence, contents
     
 
 app = Flask(__name__)
@@ -69,14 +66,16 @@ def upload(filename):
     with fs.open(filepath, 'wb') as f:
         f.write(request.get_data())
         f.close()
-    image = on_image(filepath, predictor, inputName)
-    with fs.open(f"{bucket_name}/processed/masked_{inputName}", 'rb') as f:
-        maskedBytes = f.read()
-        f.close()
+    confidence, imageBytes = on_image(filepath, predictor, inputName)
     maskedImage = BytesIO()
-    maskedImage.write(maskedBytes)
+    maskedImage.write(imageBytes)
     maskedImage.seek(0)
-    return send_file(maskedImage, mimetype='image/jpeg')  
+    response = make_response(send_file(maskedImage, mimetype='image/jpeg'))
+    if(confidence != 0):
+        response.headers['X-Confidence'] = 'damaged'
+    elif(confidence == 0):
+        response.headers['X-Confidence'] = 'undamaged'
+    return response  
 
 
 if __name__ == "__main__":
