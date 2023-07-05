@@ -21,29 +21,33 @@ from detectron2.engine import DefaultPredictor
 from io import BytesIO
 from PIL import Image
 import base64
+import gcsfs
 import numpy as np
 from codecs import encode
 
 cfg_save_path = "IS_cfg.pickle"
 
+project_id = os.environ.get("PROJECT_ID")
+bucket_name = os.environ.get("BUCKET_NAME")
+
+
 with open(cfg_save_path, "rb") as f:
     cfg = pickle.load(f)
 
 cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
-cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.895
+cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.75
 cfg.MODEL.DEVICE = "cpu"
 
-project_id = os.environ.get("PROJECT_ID")
-bucket_name = os.environ.get("BUCKET_NAME")
+
 
 
 predictor = DefaultPredictor(cfg)
 
 def damaged(confidence):
     if(confidence > 0):
-        return "DAMAGED"
+        return "DAMAGED","MODERATE"
     elif(confidence == 0):
-        return "UNDAMAGED"
+        return "UNDAMAGED","NO_DAMAGE"
 
 def on_image(image, predictor):
     image = np.asarray(bytearray(image), dtype="uint8")
@@ -73,9 +77,9 @@ def predict():
     bytes_img = encode(image, 'utf-8')
     binary_img = base64.decodebytes(bytes_img)
     confidence, imageBytes = on_image(binary_img, predictor)
-    sevDamaged = damaged(confidence)
+    damagePred,sevDamaged = damaged(confidence)
     b64Image = base64.b64encode(imageBytes)
-    b64Dict = {"b64ImageWOverlay":f"{b64Image}","defects":{"severity":f"{sevDamaged}"}}
+    b64Dict = {"b64ImageWOverlay": str(b64Image.decode("utf-8")),"defects":[{"damage":f"{damagePred}"},{"severity":f"{sevDamaged}"}]}
     return b64Dict
 
 
