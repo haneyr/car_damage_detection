@@ -8,7 +8,6 @@ import os, pickle ,random
 import cv2 as cv
 import matplotlib.pyplot as plt
 from detectron2.utils.logger import setup_logger
-setup_logger()
 from detectron2.data.datasets import register_coco_instances
 from detectron2.utils.visualizer import Visualizer
 from detectron2.config import get_cfg
@@ -31,7 +30,7 @@ with open(cfg_save_path, "rb") as f:
 
 cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
 cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.75
-cfg.MODEL.DEVICE = "cpu"
+cfg.MODEL.DEVICE = "cuda"
 
 
 
