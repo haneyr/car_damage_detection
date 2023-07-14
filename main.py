@@ -4,15 +4,12 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from werkzeug.utils import secure_filename
 import torch, torchvision
-print(torch.cuda.is_available())
 import os, pickle ,random
 import cv2 as cv
 import matplotlib.pyplot as plt
 from detectron2.utils.logger import setup_logger
 setup_logger()
 from detectron2.data.datasets import register_coco_instances
-from detectron2.engine import DefaultTrainer
-from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.utils.visualizer import Visualizer
 from detectron2.config import get_cfg
 from detectron2 import model_zoo
@@ -27,8 +24,6 @@ from codecs import encode
 
 cfg_save_path = "IS_cfg.pickle"
 
-project_id = os.environ.get("PROJECT_ID")
-bucket_name = os.environ.get("BUCKET_NAME")
 
 
 with open(cfg_save_path, "rb") as f:
