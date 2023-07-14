@@ -1,4 +1,4 @@
-FROM python:3.10.12-bullseye
+FROM nvcr.io/nvidia/pytorch:23.06-py3
 
 # Allow statements and log messages to immediately appear in the logs
 ENV PYTHONUNBUFFERED True
@@ -13,4 +13,4 @@ RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install 'git+https://github.com/facebookresearch/detectron2.git'
 
-CMD exec gunicorn --bind :$PORT --workers 4 --threads 8 --timeout 0 main:app
+CMD exec gunicorn --bind :$AIP_HTTP_PORT --workers 4 --threads 8 --timeout 0 main:app

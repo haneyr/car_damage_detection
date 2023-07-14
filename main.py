@@ -30,9 +30,9 @@ with open(cfg_save_path, "rb") as f:
 
 cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
 cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.75
-cfg.MODEL.DEVICE = "cuda"
+cfg.MODEL.DEVICE = "cpu"
 
-
+app = Flask(__name__)
 
 
 predictor = DefaultPredictor(cfg)
@@ -62,7 +62,11 @@ def on_image(image, predictor):
     return confidence, contents
     
 
-app = Flask(__name__)
+
+
+@app.route('/healthcheck')
+def healthcheck():
+    return 'alive'
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -77,5 +81,6 @@ def predict():
     return b64Dict
 
 
+
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    app.run(debug=False, host="0.0.0.0")
